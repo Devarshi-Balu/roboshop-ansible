@@ -33,7 +33,7 @@
           ManagedBy: ansible
           
         state: running 
-        wait: false
+        wait: true
       loop: "{{ instances }}"
       register: ec2_details
       when: instance_action == "create"
