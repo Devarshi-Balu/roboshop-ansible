@@ -4,45 +4,113 @@
     IMAGE_ID: "ami-0220d79f3f480ecf5"
     domain_name: "rb.devarshi.live"
     zone_id: "Z06569691EDOCEFWDOVQV"
+    zone_name: "devarshi.live"
     aws_region: "us-east-1"
+    instance_action: create
+    env: dev
+    project: roboshop
+    instances: 
+      - mongodb
+      - catalogue
+
   vars_files: 
     - vars/var_file_1.yaml
 
   tasks:
-    - name: start ec2 instaces 
+    - name: create ec2 instances
       amazon.aws.ec2_instance:
-        name: "my-basic-server"
-        state: running 
-        region: "{{ aws_region }}"
+        name: "{{ item }}-{{ env }}"
         image_id: "{{ IMAGE_ID }}" 
         instance_type: t3.micro
-        count: 1
         security_groups: 
           - sg1
 
-        network:
-          assign_public_ip: false
+        count: 1
 
         tags:
-          Name: Mainserver
-          Environment: dev
-          Project: roboshop
+          Environment: "{{ env }}"
+          Project: "{{ project }}"
           ManagedBy: ansible
           
-        wait: true
+        state: running 
+        wait: false
+      loop: "{{ instances }}"
       register: ec2_details
-      when: action == "create"
+      when: instance_action == "create"
 
     - name: debug the details of ec2 instances 
       ansible.builtin.debug: 
         var: ec2_details
-      when: action == "create"
+      when: instance_action == "create"
+
+    # - name: printing the ip_addresses of the instances
+    #   ansible.builtin.debug: 
+    #     msg: 
+    #       instance_name: "{{ item.item }}"
+    #       ip_address_public: "{{ item.instances[0].public_ip_address }}"
+    #       ip_address_private: "{{ item.instances[0].private_ip_address }}"         
+    #   loop: "{{ ec2_details.results }}"
+    #   when: instance_action == "create"
 
     - name: terminate all running ec2 instances
       amazon.aws.ec2_instance:
-        region: "{{ aws_region }}"
+        name: "{{ item  }}-{{ env }}"
         state: absent
         filters:
-          instance-state-name: "running"
-      when: action == "terminate"
+          instance-state-name: [ "running", "stopped" ]
+      loop: "{{ instances }}"
+      when: instance_action == "terminate"
 
+
+    - name: create the DNS records
+      amazon.aws.route53:
+        zone: "{{ zone_name }}"
+        record: "{{ item.item }}-{{ env }}.rb.{{ zone_name }}"
+        type: A
+        ttl: 1
+        value: "{{ item.instances[0].private_ip_address }}"
+        state: present
+
+        wait: false
+        overwrite: true
+      loop: "{{ ec2_details.results }}"
+      when: 
+        - instance_action == "create"
+        - item.item != "frontend"
+
+    - name: create the DNS record for the frontend
+      amazon.aws.route53:
+        zone: "{{ zone_name }}"
+        record: "roboshop-{{ env }}.rb.{{ zone_name }}"
+        type: A
+        ttl: 1
+        value: "{{ item.instances[0].public_ip_address }}"
+        state: present
+
+        wait: false
+        overwrite: true
+      loop: "{{ ec2_details.results }}"
+      when: 
+        - item.item == "frontend"
+        - instance_action == "create"
+
+    - name: delete dns records
+      amazon.aws.route53:
+        zone: "{{ zone_name }}"
+        record: "{{ item }}-{{ env }}.rb.{{ zone_name }}"
+        type: A
+        state: absent
+      loop: "{{ instances }}"
+      when: 
+        - instance_action == "terminate"
+        - item != "frontend" 
+
+    - name: delete dns record for the frontend
+      amazon.aws.route53:
+        zone: "{{ zone_name }}"
+        record: "roboshop-{{ env }}.rb.devarshi.live"
+        type: A
+        ttl: 1
+
+        state: absent
+      when: instance_action == "terminate"
