@@ -1,0 +1,48 @@
+- name: play-1
+  hosts: local
+  vars: 
+    IMAGE_ID: "ami-0220d79f3f480ecf5"
+    domain_name: "rb.devarshi.live"
+    zone_id: "Z06569691EDOCEFWDOVQV"
+    aws_region: "us-east-1"
+  vars_files: 
+    - vars/var_file_1.yaml
+
+  tasks:
+    - name: start ec2 instaces 
+      amazon.aws.ec2_instance:
+        name: "my-basic-server"
+        state: running 
+        region: "{{ aws_region }}"
+        image_id: "{{ IMAGE_ID }}" 
+        instance_type: t3.micro
+        count: 1
+        security_groups: 
+          - sg1
+
+        network:
+          assign_public_ip: false
+
+        tags:
+          Name: Mainserver
+          Environment: dev
+          Project: roboshop
+          ManagedBy: ansible
+          
+        wait: true
+      register: ec2_details
+      when: action == "create"
+
+    - name: debug the details of ec2 instances 
+      ansible.builtin.debug: 
+        var: ec2_details
+      when: action == "create"
+
+    - name: terminate all running ec2 instances
+      amazon.aws.ec2_instance:
+        region: "{{ aws_region }}"
+        state: absent
+        filters:
+          instance-state-name: "running"
+      when: action == "terminate"
+

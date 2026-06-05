@@ -1,0 +1,30 @@
+student: 
+  - name: Devarshi
+    age: 21
+    dept: ECE
+  - name: bala
+    age: 21
+    Dept: ECE
+
+fruits: 
+  - apple
+  - banana
+  - mango
+
+
+
+
+servers:  
+  - web1 
+  - web2 
+  - web3
+
+multi_line_string: | 
+  this is a multi line string, 
+  This is line -1 
+  This is line -2 
+  This is line -3
+
+preserve_lines_into_one: > 
+  THis is a 
+  single line

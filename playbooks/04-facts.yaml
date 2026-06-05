@@ -1,0 +1,19 @@
+- name: pay-1
+  hosts: local 
+  become: true
+  vars: 
+    var1: variable-1
+    var2: variable-2
+    var3: variable-3
+    var4: variable-4
+    var5: variable-5
+
+  vars_files:
+    - vars/var_file_1.yaml
+
+  tasks: 
+    - name: store the ansible_facts
+      ansible.builtin.copy: 
+        content: "{{ ansible_facts | to_nice_json(indent=4) }}"
+        dest: "/workspaces/codespaces-blank/ansible-simple/ansible_facts.json"
+      delegate_to: localhost
