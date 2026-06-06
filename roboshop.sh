@@ -18,7 +18,7 @@ N="\e[0m"
 
 inventory_file="${script_dir}/inventory.ini"
 
-instances=("mongodb" "catalogue" "frontend")
+instances=("mongodb" "redis" "rabbitmq" "mysql" "catalogue" "cart" "user" "shipping" "payment" "dispatch" "frontend")
 
 json_payload=$(jq -n \
     --argjson instances "$(printf '%s\n' "${instances[@]}" | jq -R . | jq -s .)" \
@@ -28,7 +28,7 @@ json_payload=$(jq -n \
     }')
 
 ansible-playbook "${script_dir}/01_roboshop.yaml" \
-    -i "${script_dir}/../inventory.ini" \
+    -i $inventory_file \
     -e "$json_payload"
 
 
