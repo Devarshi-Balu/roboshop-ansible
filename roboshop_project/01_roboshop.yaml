@@ -108,9 +108,12 @@
     - name: delete dns record for the frontend
       amazon.aws.route53:
         zone: "{{ zone_name }}"
-        record: "roboshop-{{ env }}.rb.devarshi.live"
+        record: "roboshop-{{ env }}.rb.{{ zone_name }}"
         type: A
         ttl: 1
 
         state: absent
-      when: instance_action == "terminate"
+      when: 
+        - instance_action == "terminate"
+        - "'frontend' in instances"
+        
