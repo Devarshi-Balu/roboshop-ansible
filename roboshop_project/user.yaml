@@ -1,0 +1,76 @@
+- name: setup and configure user microservice 
+  hosts: user
+  become: true
+  tasks: 
+    - name: disable nodejs 
+      ansible.builtin.command: dnf module disbale nodejs -y 
+
+    - name: enable nodejs - 20 
+      ansible.builtin.dnf:
+        name: nodejs
+        state: enabled
+      
+    - name: install nodejs:20
+      ansible.builtin.dnf: 
+        name: nodejs 
+        state: present 
+
+    - name: add RoboShop System user 
+      ansible.builtin.user: 
+        name: roboshop 
+        system: true
+        home: /app
+        shell: /sbin/nologin 
+        comment: "roboshop system user"
+        state: present 
+      
+    - name: remove any existing /app directory 
+      ansible.builtin.file: 
+        path: /app
+        state: absent 
+
+    - name: create /app directory
+      ansible.builtin.file: 
+        path: /app
+        state: directory 
+        owner: roboshop 
+        group: roboshop 
+        recurse: true
+
+    - name: remove any existing zip files 
+      ansible.builtin.file:   
+        path: /tmp/user.zip
+        state: absent 
+
+    - name: download the zip file 
+      ansible.builtin.get_url:
+        url: https://roboshop-artifacts.s3.amazonaws.com/user-v3.zip 
+        dest: /tmp/user.zip
+      
+    - name: unzip the code files
+      ansible.builtin.unarchive: 
+        src: /tmp/user.zip
+        dest: /app
+        remote_src: true
+
+    - name: install dependencies
+      community.general.npm:
+        path: /app
+
+    - name: copy the user service file 
+      ansible.builtin.template: 
+        src: user.service 
+        dest: /etc/systemd/system/user.service
+
+    - name: loading the service 
+      ansible.builtin.systemd: 
+        daemon_reload: true
+    
+    - name: enabling and starting the service 
+      ansible.builtin.service: 
+        name: user  
+        enabled: true 
+        state: started
+
+
+        

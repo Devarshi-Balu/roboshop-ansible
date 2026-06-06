@@ -43,6 +43,12 @@
         url: https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip 
         dest: /tmp/catalogue.zip
         force: false
+    
+    - name: Unzip the code filters
+      ansible.builtin.unarchive:
+        src: /tmp/catalogue.zip
+        dest: /app
+        remote_src: true
       
     - name: install dependencies
       community.general.npm:
