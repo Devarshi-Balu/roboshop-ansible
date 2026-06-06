@@ -33,13 +33,11 @@
       ansible.builtin.file: 
         path: /app
         state: directory 
-        owner: roboshop 
-        group: roboshop 
         recurse: true
 
     - name: remove any existing zip files 
       ansible.builtin.file:   
-        path: /tmp/user.zip
+        path: /tmp/user.zip 
         state: absent 
 
     - name: download the zip file 

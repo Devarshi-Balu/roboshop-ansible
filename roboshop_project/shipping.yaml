@@ -1,0 +1,103 @@
+- name: shipping service configuration and setup
+  hosts: shipping
+  become: true
+  vars: 
+    mysql_host: "{{ MYSQL_HOST }}"
+    mysql_user: "root"
+    mysql_password: "RoboShop@1"
+
+  tasks:
+    - name: install maven and mysql 
+      ansible.builtin.dnf: 
+        name: "{{ item }}"
+        state: present  
+      loop: 
+        - maven 
+        - mysql 
+    
+    - name: add roboshop system user  
+      ansible.builtin.user: 
+        name: roboshop 
+        system: true
+        home: /app
+        shell: /sbin/nologin
+        comment: "roboshop system user"
+        state: present 
+
+    - name: remove any existing app directory 
+      ansible.builtin.file:   
+        path: /app
+        state: absent 
+
+    - name: create app directory 
+      ansible.builtin.file: 
+        path: /app
+        state: directory 
+
+    - name: remove any existing zip files 
+      ansible.builtin.file:   
+        path: /tmp/shipping.zip 
+        state: absent 
+
+    - name: downlod the shipping zip code files zip folder 
+      ansible.builtin.get_url: 
+        url: https://roboshop-artifacts.s3.amazonaws.com/shipping-v3.zip
+        dest: /tmp/shipping.zip
+        force: false
+
+    - name: unzpiing the files 
+      ansible.builtin.unarchive:  
+        src: /tmp/shipping.zip
+        dest: /app
+        remote_src: true
+
+    - name: installing dependencies packages 
+      ansible.builtin.command: maven clean package
+      args:   
+        chdir: /app
+
+    - name: moving the jar file 
+      ansible.builtin.command: mv target/shipping-1.0.jar shipping.jar 
+      args:
+        chdir: /app
+
+    - name: copying the service file 
+      ansible.builtin.template: 
+        src: shipping.service 
+        dest: /etc/systemd/system/shipping.service
+      
+    - name: laoding the shipping service 
+      ansible.builtin.systemd:  
+        daemon_reload: true
+    
+    - name: installing PyMySQL with pip
+      ansible.builtin.pip:
+        name: pymysql
+        state: present
+
+
+    - name: checking if the database has the data already 
+      ansible.builtin.command: "mysql -h {{ mysql_host }} -u{{ mysql_user }} -p{{ mysql_password }} -e 'use cities'" 
+      register: check_db
+    
+    - name: loading data to the mysql database 
+      ansible.mysql.mysql_db:
+        login_host: "{{ mysql_host }}"
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        name: all
+        state: import
+        target: "{{ item }}"
+      loop: 
+        - /app/db/schema.sql
+        - /app/db/app-user.sql 
+        - /app/db/master-data.sql
+      when: (check_db.rc != 0)
+
+    - name: enabling and starting shipping 
+      ansible.builtin.service: 
+        name: shipping
+        enabled: true
+        state: started
+
+  
