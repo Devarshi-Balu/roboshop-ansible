@@ -43,6 +43,8 @@ function validate_playbook(){
     fi
 }
 
+validate_playbook "main-playbook-creating instances" 
+
 for instance in "${instances[@]}"; do
     echo -e "$B running the playbook for the instance ... $instance .... $N"
     ansible-playbook "${script_dir}/${instance}.yaml" -i "$inventory_file"
