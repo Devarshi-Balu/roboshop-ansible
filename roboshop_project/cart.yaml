@@ -1,0 +1,74 @@
+- name: setup and configure cart microservice 
+  hosts: cart
+  become: true
+  tasks: 
+    - name: disable nodejs 
+      ansible.builtin.command: dnf module disbale nodejs -y 
+
+    - name: enable nodejs - 20 
+      ansible.builtin.dnf:
+        name: nodejs
+        state: enabled
+      
+    - name: install nodejs:20
+      ansible.builtin.dnf: 
+        name: nodejs 
+        state: present 
+
+    - name: add RoboShop System user 
+      ansible.builtin.user: 
+        name: roboshop 
+        system: true
+        home: /app
+        shell: /sbin/nologin 
+        comment: "roboshop system user"
+        state: present 
+      
+    - name: remove any existing /app directory 
+      ansible.builtin.file: 
+        path: /app
+        state: absent 
+
+    - name: create /app directory
+      ansible.builtin.file: 
+        path: /app
+        state: directory 
+        owner: roboshop 
+        group: roboshop 
+        recurse: true
+
+    - name: remove any existing zip files 
+      ansible.builtin.file:   
+        path: /tmp/cart.zip 
+        state: absent 
+
+    - name: downlod the cart zip code files zip folder 
+      ansible.builtin.get_url: 
+        url: https://roboshop-artifacts.s3.amazonaws.com/cart-v3.zip
+        dest: /tmp/cart.zip
+        force: false
+
+    - name: unzip the code files 
+      ansible.builtin.unarchive:
+        src: /tmp/cart.zip  
+        dest: /app
+        remote_src: true
+
+    - name: install the node packages 
+      community.general.npm:
+        path: /app
+
+    - name: copy the car service file 
+      ansible.builtin.template: 
+        src: cart.service
+        dest: /etc/systemd/system/cart.service
+    
+    - name: loading service 
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: enabling and starting service 
+      ansible.builtin.service: 
+        name: cart 
+        enabled: true
+        state: started
