@@ -1,0 +1,86 @@
+- name: setup and configure teh catalogue microservice 
+  hosts: catalogue
+  become: true
+  tasks: 
+    - name: disable the current version of nodejs 
+      ansible.builtin.command: dnf module disable nodejs -y 
+
+    - name: enabling the nodejs:20 
+      ansible.builtin.dnf:
+        name: nodejs:20
+        state: enabled
+
+    - name: installing nodejs from the enabled module stream 
+      ansible.builtin.dnf: 
+        name: nodejs
+        state: present 
+
+    - name: add roboshop system user 
+      ansible.builtin.user:
+        name: roboshop
+        system: true
+        home: /app
+        shell: /sbin/nologin
+        comment: "roboshop system user"
+      
+    - name: delete app directory 
+      ansible.builtin.file: 
+        path: /app
+        state: absent
+      
+    - name: create app directory 
+      ansible.builtin.file: 
+        path: /app
+        state: directory
+
+    - name: clean the catalogue zip file
+      ansible.builtin.file:
+        path: /tmp/catalogue.zip
+        state: absent
+    
+    - name: download the cataogue zip file 
+      ansible.builtin.get_url:
+        url: https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip 
+        dest: /tmp/catalogue.zip
+        force: false
+      
+    - name: install dependencies
+      community.general.npm:
+        path: /app
+
+    - name: copy the service file 
+      ansible.builtin.copy: 
+        src: catalogue.service
+        dest: /etc/systemd/system/catalogue.service
+
+    - name: reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+    
+    - name: copy mongo repo
+      ansible.builtin.copy: 
+        src: mongo.repo 
+        dest: /etc/yum.repos.d/mongo.repo
+    
+    - name: install mongodb client
+      ansible.builtin.dnf:
+        name: mongodb-mongosh
+        state: present
+
+    - name: check products loaded
+      ansible.builtin.command: mongosh --host "{{ MONGODB_HOST }}" --quiet  --eval 'db.getMongo().getDBNames().indexOf("catalogue")'
+      register: catalogue_output
+
+    - name: print the output
+      ansible.builtin.debug:
+        msg: "{{ catalogue_output }}"
+
+    - name: load the products
+      ansible.builtin.shell: mongosh --host "{{ MONGODB_HOST }}" </app/db/master-data.js
+      when: ( catalogue_output.stdout  | int ) < 0
+
+    - name: start catalogue
+      ansible.builtin.service:
+        name: catalogue
+        state: started
+        enabled: yes
