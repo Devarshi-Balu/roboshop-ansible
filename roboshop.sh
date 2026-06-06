@@ -5,7 +5,7 @@ timestamp=$(date +"%Y%m%d_%H%M%S")
 log_file="${logs_dir}/${script_name}_${timestamp}.log"
 mkdir -p $logs_dir
 
-export AWS_PROFILE=deva
+export AWS_PROFILE="deva"
 
 exec > >(tee -a $log_file) 2>&1
 

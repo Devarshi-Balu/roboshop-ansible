@@ -1,8 +1,9 @@
-- name: play-1
+- name: mainplay-create or terminate instances
   hosts: local
+  connection: local
   vars: 
     IMAGE_ID: "ami-0220d79f3f480ecf5"
-    domain_name: "rb.devarshi.live"
+    domain_name: "devarshi.live"
     zone_id: "Z06569691EDOCEFWDOVQV"
     zone_name: "devarshi.live"
     aws_region: "us-east-1"
@@ -12,10 +13,6 @@
     instances: 
       - mongodb
       - catalogue
-
-  vars_files: 
-    - vars/var_file_1.yaml
-
   tasks:
     - name: create ec2 instances
       amazon.aws.ec2_instance:
