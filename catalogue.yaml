@@ -1,4 +1,4 @@
-- name: setup and configure teh catalogue microservice 
+- name: setup and configure the catalogue microservice 
   hosts: catalogue
   become: true
   tasks: 
@@ -6,10 +6,8 @@
       ansible.builtin.command: dnf module disable nodejs -y 
 
     - name: enabling the nodejs:20 
-      ansible.builtin.dnf:
-        name: nodejs:20
-        state: enabled
-
+      ansible.builtin.command: dnf module enable nodejs:20
+    
     - name: installing nodejs from the enabled module stream 
       ansible.builtin.dnf: 
         name: nodejs
@@ -89,4 +87,4 @@
       ansible.builtin.service:
         name: catalogue
         state: started
-        enabled: yes
+        enabled: true

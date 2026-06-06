@@ -53,8 +53,6 @@
       amazon.aws.ec2_instance:
         name: "{{ item  }}-{{ env }}"
         state: absent
-        filters:
-          instance-state-name: [ "running", "stopped" ]
       loop: "{{ instances }}"
       when: instance_action == "terminate"
 

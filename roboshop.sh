@@ -6,6 +6,8 @@ log_file="${logs_dir}/${script_name}_${timestamp}.log"
 mkdir -p $logs_dir
 
 export AWS_PROFILE="deva"
+export ANSIBLE_FORCE_COLOR=True
+export PYTHONUNBUFFERED=1
 
 exec > >(tee -a $log_file) 2>&1
 
@@ -37,12 +39,12 @@ function validate_playbook(){
         echo -e "$R Something is up, There is an error in running the playbook for the instance ... $1 ... $N"
         exit 1;
     else
-        echo -e "$G completed the playbook for the instance ... $instnace .... $N"
+        echo -e "$G completed the playbook for the instance ... $instance .... $N"
     fi
 }
 
 for instance in "${instances[@]}"; do
-    echo -e "$B running the playbook for the instance ... $instnace .... $N"
+    echo -e "$B running the playbook for the instance ... $instance .... $N"
     ansible-playbook "${script_dir}/${instance}.yaml" -i "$inventory_file"
     validate_playbook $instance
     echo "==========================================================="

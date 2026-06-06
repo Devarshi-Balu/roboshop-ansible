@@ -3,12 +3,10 @@
   become: true
   tasks: 
     - name: disable nodejs 
-      ansible.builtin.command: dnf module disbale nodejs -y 
+      ansible.builtin.command: dnf module disable nodejs -y 
 
-    - name: enable nodejs - 20 
-      ansible.builtin.dnf:
-        name: nodejs
-        state: enabled
+    - name: enabling the nodejs:20 
+      ansible.builtin.command: dnf module enable nodejs:20
       
     - name: install nodejs:20
       ansible.builtin.dnf: 
@@ -33,9 +31,6 @@
       ansible.builtin.file: 
         path: /app
         state: directory 
-        owner: roboshop 
-        group: roboshop 
-        recurse: true
 
     - name: remove any existing zip files 
       ansible.builtin.file:   
