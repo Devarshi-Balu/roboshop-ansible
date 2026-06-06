@@ -1,13 +1,49 @@
 script_name=$(basename $0 .sh)
 script_dir=$(realpath $(dirname $0))
+logs_dir="${script_dir}/logs"
+timestamp=$(date +"%Y%m%d_%H%M%S")
+log_file="${logs_dir}/${script_name}_${timestamp}.log"
+mkdir -p $logs_dir
 
 export AWS_PROFILE=deva
 
-ansible-playbook "${script_dir}/01_roboshop.yaml" -i "${script_dir}/../inventory.ini" -e \
-                                                        "$(
-                                                            jq -n \
-                                                                '{
-                                                                    instance_action: "create",  
-                                                                    instances: ["mongodb", "frontend", "catalogue"]                                                           
-                                                                }'
-                                                        )"
+exec > >(tee -a $log_file) 2>&1
+
+#color variables
+R="\e[31m"
+Y="\e[32m"
+G="\e[33m"
+B="\e[34m"
+N="\e[0m"
+
+inventory_file="${script_dir}/inventory.ini"
+
+instances=("mongodb" "catalogue" "frontend")
+
+json_payload=$(jq -n \
+    --argjson instances "$(printf '%s\n' "${instances[@]}" | jq -R . | jq -s .)" \
+    '{
+        instance_action: "create",
+        instances: $instances
+    }')
+
+ansible-playbook "${script_dir}/01_roboshop.yaml" \
+    -i "${script_dir}/../inventory.ini" \
+    -e "$json_payload"
+
+
+function validate_playbook(){
+    if [[ $? -ne 0 ]]; then
+        echo -e "$R Something is up, There is an error in running the playbook for the instance ... $1 ... $N"
+        exit 1;
+    else
+        echo -e "$G completed the playbook for the instance ... $instnace .... $N"
+    fi
+}
+
+for instance in "${instances[@]}"; do
+    echo -e "$B running the playbook for the instance ... $instnace .... $N"
+    ansible-playbook "${script_dir}/${instance}.yaml" -i "$inventory_file"
+    validate_playbook $instance
+    echo "==========================================================="
+done
