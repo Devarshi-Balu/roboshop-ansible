@@ -52,7 +52,7 @@
         remote_src: true
 
     - name: installing dependencies packages 
-      ansible.builtin.command: maven clean package
+      ansible.builtin.command: mvn clean package
       args:   
         chdir: /app
 
@@ -80,7 +80,10 @@
       ansible.builtin.command: "mysql -h {{ mysql_host }} -u{{ mysql_user }} -p{{ mysql_password }} -e 'use cities'" 
       register: check_db
     
-    - name: loading data to the mysql database 
+            # The below task uses ansible.mysql.mysql_db which is not included in ansible core 
+            # install the module using the below command
+            # ansible-galaxy collection install ansible.mysql
+    - name: loading data to the mysql database  
       ansible.mysql.mysql_db:
         login_host: "{{ mysql_host }}"
         login_user: "{{ mysql_user }}"

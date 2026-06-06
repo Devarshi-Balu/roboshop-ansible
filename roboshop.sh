@@ -18,6 +18,24 @@ G="\e[33m"
 B="\e[34m"
 N="\e[0m"
 
+#timing
+start_time=$(date +%s)
+echo -e "Script run started @ $B ... $(date) ... $N"
+
+function caculate_total_time(){
+    end_time=$(date +%s)
+    time_taken=$(( $end_time - $start_time ))
+    seconds=$(( time_taken % 60 ))
+    minutes=$(( time_taken/60 % 60 ))
+    hours=$(( time_taken/60/60 ))
+
+    echo -e "Script run ended @ $B ... $(date) ... $N"
+    echo "===========Total Time Taken================"
+    echo -e "---------($B ${hours} hrs, ${minutes} min, ${seconds} sec $N)-----------"
+    echo "==========================================="
+}
+
+
 inventory_file="${script_dir}/inventory.ini"
 
 instances=("mongodb" "redis" "rabbitmq" "mysql" "catalogue" "cart" "user" "shipping" "payment" "dispatch" "frontend")
@@ -37,6 +55,7 @@ ansible-playbook "${script_dir}/01_roboshop.yaml" \
 function validate_playbook(){
     if [[ $? -ne 0 ]]; then
         echo -e "$R Something is up, There is an error in running the playbook for the instance ... $1 ... $N"
+        caculate_total_time
         exit 1;
     else
         echo -e "$G completed the playbook for the instance ... $instance .... $N"
@@ -51,3 +70,5 @@ for instance in "${instances[@]}"; do
     validate_playbook $instance
     echo "==========================================================="
 done
+
+caculate_total_time
