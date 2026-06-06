@@ -76,7 +76,6 @@
       loop: "{{ ec2_details.results }}"
       when: 
         - instance_action == "create"
-        - item.item != "frontend"
 
     - name: create the DNS record for the frontend
       amazon.aws.route53:
@@ -89,7 +88,7 @@
 
         wait: false
         overwrite: true
-      loop: "{{ ec2_details.results }}"
+      loop: "{{ ec2_details.results | selectattr('item', 'equalto', 'frontend') | list }}"
       when: 
         - item.item == "frontend"
         - instance_action == "create"
