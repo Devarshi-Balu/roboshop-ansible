@@ -79,12 +79,13 @@
     - name: checking if the database has the data already 
       ansible.builtin.command: "mysql -h {{ mysql_host }} -u{{ mysql_user }} -p{{ mysql_password }} -e 'use cities'" 
       register: check_db
+      ignore_errors: true
     
             # The below task uses ansible.mysql.mysql_db which is not included in ansible core 
             # install the module using the below command
             # ansible-galaxy collection install ansible.mysql
     - name: loading data to the mysql database  
-      ansible.mysql.mysql_db:
+      community.mysql.mysql_db:
         login_host: "{{ mysql_host }}"
         login_user: "{{ mysql_user }}"
         login_password: "{{ mysql_password }}"

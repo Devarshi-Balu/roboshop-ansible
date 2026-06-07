@@ -58,7 +58,7 @@ function validate_playbook(){
         caculate_total_time
         exit 1;
     else
-        echo -e "$G completed the playbook for the instance ... $instance .... $N"
+        echo -e "$G completed the playbook for the instance ... $1 .... $N"
     fi
 }
 
