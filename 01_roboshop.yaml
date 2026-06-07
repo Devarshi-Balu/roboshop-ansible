@@ -110,4 +110,12 @@
       when: 
         - instance_action == "terminate"
         - "'frontend' in instances"
-        
+      
+    - name: Wait until DNS record resolves
+      ansible.builtin.shell: |
+        getent hosts {{ item }}-{{ env }}.rb.{{ zone_name }}
+      register: dns_check
+      retries: 10
+      delay: 5
+      until: dns_check.rc == 0
+      loop: "{{ instances }}"
